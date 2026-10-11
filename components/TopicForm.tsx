@@ -62,27 +62,29 @@ export default function TopicForm({ onGenerate, generating, error }: Props) {
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm opacity-70">Difficulty:</span>
-          <div className="flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
-            {DIFFICULTY_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                disabled={generating}
-                onClick={() => setDifficulty(opt.value)}
-                aria-pressed={difficulty === opt.value}
-                className={`px-3 py-1 text-sm disabled:opacity-60 ${
-                  difficulty === opt.value
-                    ? "bg-foreground text-background"
-                    : "bg-transparent hover:bg-black/5 dark:hover:bg-white/10"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+        {mode === "general" && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm opacity-70">Difficulty:</span>
+            <div className="flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
+              {DIFFICULTY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={generating}
+                  onClick={() => setDifficulty(opt.value)}
+                  aria-pressed={difficulty === opt.value}
+                  className={`px-3 py-1 text-sm disabled:opacity-60 ${
+                    difficulty === opt.value
+                      ? "bg-foreground text-background"
+                      : "bg-transparent hover:bg-black/5 dark:hover:bg-white/10"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex items-center gap-3">
           <span className="text-sm opacity-70">Quiz type:</span>
           <div className="flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">

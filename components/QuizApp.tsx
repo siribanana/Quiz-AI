@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { Quiz } from "@/lib/quizSchema";
 import type { Difficulty, QuizMode } from "@/lib/prompt";
+import type { FinishResult } from "@/lib/useQuizClock";
 import TopicForm from "./TopicForm";
-import QuizBoard, { type FinishResult } from "./QuizBoard";
+import QuizBoard from "./QuizBoard";
+import NamingBoard from "./NamingBoard";
 import ResultsSummary from "./ResultsSummary";
 
 type Phase = "idle" | "generating" | "ready" | "playing" | "finished";
@@ -93,8 +95,10 @@ export default function QuizApp() {
         <div className="text-center space-y-4">
           <p>
             Your quiz on <strong>{quiz.topic}</strong> is ready — {minutes} minute
-            {minutes === 1 ? "" : "s"}, {quiz.questions.length} questions,{" "}
-            {DIFFICULTY_LABELS[difficulty].toLowerCase()} difficulty, {MODE_LABELS[mode]} quiz.
+            {minutes === 1 ? "" : "s"}, {quiz.questions.length} questions
+            {mode === "general" && `, ${DIFFICULTY_LABELS[difficulty].toLowerCase()} difficulty`}
+            {", "}
+            {MODE_LABELS[mode]} quiz.
           </p>
           <button
             onClick={handleStart}
@@ -105,7 +109,11 @@ export default function QuizApp() {
         </div>
       )}
 
-      {phase === "playing" && quiz && (
+      {phase === "playing" && quiz && mode === "naming" && (
+        <NamingBoard quiz={quiz} timeLimitSeconds={timeLimitSeconds} onFinish={handleFinish} />
+      )}
+
+      {phase === "playing" && quiz && mode === "general" && (
         <QuizBoard quiz={quiz} timeLimitSeconds={timeLimitSeconds} onFinish={handleFinish} />
       )}
 

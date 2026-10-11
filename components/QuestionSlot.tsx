@@ -1,6 +1,6 @@
 "use client";
 
-export type SlotStatus = "unanswered" | "correct" | "revealed";
+import type { SlotStatus } from "@/lib/useQuizClock";
 
 interface Props {
   index: number;

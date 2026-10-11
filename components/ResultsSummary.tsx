@@ -1,5 +1,5 @@
 import type { Quiz } from "@/lib/quizSchema";
-import type { FinishResult } from "./QuizBoard";
+import type { FinishResult } from "@/lib/useQuizClock";
 
 interface Props {
   quiz: Quiz;

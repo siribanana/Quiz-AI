@@ -28,10 +28,13 @@ const MODE_GUIDANCE: Record<QuizMode, string> = {
   general:
     "Quiz type: GENERAL. Ask a well-rounded mix of questions about the topic — facts, dates, people, places, causes, effects, numbers, etc. Do not simply ask the user to name items in a list.",
   naming:
-    'Quiz type: NAMING / RANKING. The topic describes a ranked or listed set of items (e.g. "top 10 mountains by height", "the 10 most visited attractions in the world"). Each of the 10 questions must ask the user to name ONE specific item from that list, identified by its rank or position (e.g. "Ranked #1 by height — name it." or "The 7th most visited attraction in the world is ___."). The "answer" for every question must be just the name of that item (e.g. the mountain name, the attraction name) — never a date, statistic, or other fact about it. Cover ranks 1 through 10 of the real list (researched via web search), without repeating the same item twice. If the topic as given doesn\'t naturally have 10 distinct ranked items, extend the list sensibly (e.g. widen "top 5" to the top 10) while staying faithful to real rankings.',
+    'Quiz type: NAMING / RANKING. The topic describes a ranked or listed set of items (e.g. "top 10 mountains by height", "the 10 most visited attractions in the world"). Each of the 10 questions must ask the user to name ONE specific item from that list, identified by its rank or position (e.g. "Ranked #1 by height — name it." or "The 7th most visited attraction in the world is ___."). The "answer" for every question must be just the name of that item (e.g. the mountain name, the attraction name) — never a date, statistic, or other fact about it. Cover ranks 1 through 10 of the real list (researched via web search), without repeating the same item twice. If the topic as given doesn\'t naturally have 10 distinct ranked items, extend the list sensibly (e.g. widen "top 5" to the top 10) while staying faithful to real rankings. IMPORTANT: return the "questions" array ordered by rank ascending — index 0 must be rank #1 (the top of the list), index 1 must be rank #2, and so on through index 9 as rank #10. The client displays each question strictly by its array position as "#1", "#2", etc., without reading rank out of the prompt text, so the array order must exactly match the real ranking.',
 };
 
 export function buildSystemPrompt(difficulty: Difficulty, mode: QuizMode): string {
+  if (mode === "naming") {
+    return `${BASE_SYSTEM_PROMPT}\n\n${MODE_GUIDANCE[mode]}`;
+  }
   return `${BASE_SYSTEM_PROMPT}\n\n${DIFFICULTY_GUIDANCE[difficulty]}\n\n${MODE_GUIDANCE[mode]}`;
 }
 
