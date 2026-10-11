@@ -5,6 +5,7 @@ import { getAnthropicClient } from "@/lib/anthropic";
 import {
   buildSystemPrompt,
   buildUserPrompt,
+  extractRequestedCount,
   isDifficulty,
   isQuizMode,
   type Difficulty,
@@ -33,15 +34,16 @@ async function callModel(
   messages: MessageParam[],
   maxTokens: number,
   difficulty: Difficulty,
-  mode: QuizMode
+  mode: QuizMode,
+  count: number
 ) {
   const client = getAnthropicClient();
   return client.messages.stream({
     model: MODEL,
     max_tokens: maxTokens,
-    system: buildSystemPrompt(difficulty, mode),
+    system: buildSystemPrompt(difficulty, mode, count),
     messages,
-    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 15 }],
+    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: Math.max(15, count + 5) }],
     output_config: { format: { type: "json_schema", schema: QUIZ_JSON_SCHEMA } },
   }).finalMessage();
 }
@@ -58,25 +60,31 @@ async function resolveFinalMessage(
   messages: MessageParam[],
   maxTokens: number,
   difficulty: Difficulty,
-  mode: QuizMode
+  mode: QuizMode,
+  count: number
 ): Promise<Anthropic.Message> {
-  let message = await callModel(messages, maxTokens, difficulty, mode);
+  let message = await callModel(messages, maxTokens, difficulty, mode, count);
   let resumes = 0;
 
   while (message.stop_reason === "pause_turn" && resumes < MAX_RESUME_ATTEMPTS) {
     messages = [...messages, { role: "assistant", content: message.content }];
-    message = await callModel(messages, maxTokens, difficulty, mode);
+    message = await callModel(messages, maxTokens, difficulty, mode, count);
     resumes++;
   }
 
   return message;
 }
 
-async function generateQuiz(topic: string, difficulty: Difficulty, mode: QuizMode): Promise<Quiz> {
-  const messages: MessageParam[] = [{ role: "user", content: buildUserPrompt(topic) }];
-  let maxTokens = 8000;
+async function generateQuiz(
+  topic: string,
+  difficulty: Difficulty,
+  mode: QuizMode,
+  count: number
+): Promise<Quiz> {
+  const messages: MessageParam[] = [{ role: "user", content: buildUserPrompt(topic, count) }];
+  let maxTokens = Math.max(8000, count * 900);
 
-  let message = await resolveFinalMessage(messages, maxTokens, difficulty, mode);
+  let message = await resolveFinalMessage(messages, maxTokens, difficulty, mode, count);
 
   if (message.stop_reason === "refusal") {
     const err = new Error("refusal");
@@ -85,8 +93,8 @@ async function generateQuiz(topic: string, difficulty: Difficulty, mode: QuizMod
   }
 
   if (message.stop_reason === "max_tokens") {
-    maxTokens = 16000;
-    message = await resolveFinalMessage(messages, maxTokens, difficulty, mode);
+    maxTokens *= 2;
+    message = await resolveFinalMessage(messages, maxTokens, difficulty, mode, count);
   }
 
   const text = finalTextOf(message);
@@ -98,23 +106,23 @@ async function generateQuiz(topic: string, difficulty: Difficulty, mode: QuizMod
 
   let quiz = parsed;
 
-  if (quiz.questions.length > 10) {
-    quiz = { ...quiz, questions: quiz.questions.slice(0, 10) };
-  } else if (quiz.questions.length < 10) {
+  if (quiz.questions.length > count) {
+    quiz = { ...quiz, questions: quiz.questions.slice(0, count) };
+  } else if (quiz.questions.length < count) {
     const retryMessages: MessageParam[] = [
       ...messages,
       { role: "assistant", content: message.content },
       {
         role: "user",
-        content: `You returned only ${quiz.questions.length} questions. Please return exactly 10 questions.`,
+        content: `You returned only ${quiz.questions.length} questions. Please return exactly ${count} questions.`,
       },
     ];
-    const retryMessage = await resolveFinalMessage(retryMessages, maxTokens, difficulty, mode);
+    const retryMessage = await resolveFinalMessage(retryMessages, maxTokens, difficulty, mode, count);
     const retryParsed = extractJson(finalTextOf(retryMessage));
-    if (isValidQuizShape(retryParsed) && retryParsed.questions.length >= 10) {
-      quiz = { ...retryParsed, questions: retryParsed.questions.slice(0, 10) };
+    if (isValidQuizShape(retryParsed) && retryParsed.questions.length >= count) {
+      quiz = { ...retryParsed, questions: retryParsed.questions.slice(0, count) };
     } else {
-      throw new Error("Could not obtain 10 questions after retry");
+      throw new Error(`Could not obtain ${count} questions after retry`);
     }
   }
 
@@ -149,9 +157,10 @@ export async function POST(request: NextRequest) {
 
   const difficulty: Difficulty = isDifficulty(parsedBody?.difficulty) ? parsedBody.difficulty : "difficult";
   const mode: QuizMode = isQuizMode(parsedBody?.mode) ? parsedBody.mode : "general";
+  const count = extractRequestedCount(topic);
 
   try {
-    const quiz = await generateQuiz(topic, difficulty, mode);
+    const quiz = await generateQuiz(topic, difficulty, mode, count);
     return NextResponse.json({ quiz });
   } catch (error) {
     if (error instanceof Error && error.name === "QuizRefusalError") {
