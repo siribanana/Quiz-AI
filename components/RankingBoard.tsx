@@ -17,11 +17,23 @@ interface RowState {
   wrongCount: number;
 }
 
-function shuffledIndices(length: number): number[] {
+function shuffleOnce(length: number): number[] {
   const indices = Array.from({ length }, (_, i) => i);
   for (let i = indices.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices;
+}
+
+// Shuffles, and explicitly re-rolls if it happens to land back on rank order
+// (identity permutation) — the whole point is that the list must never be
+// presented already in rank order, so chance alone isn't good enough here.
+function shuffledIndices(length: number): number[] {
+  if (length <= 1) return Array.from({ length }, (_, i) => i);
+  let indices = shuffleOnce(length);
+  while (indices.every((v, i) => v === i)) {
+    indices = shuffleOnce(length);
   }
   return indices;
 }
