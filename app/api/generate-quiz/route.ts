@@ -14,7 +14,7 @@ import { QUIZ_JSON_SCHEMA, isValidQuizShape, type Quiz } from "@/lib/quizSchema"
 
 export const maxDuration = 60;
 
-const MODEL = "claude-opus-4-8";
+const MODEL = "claude-haiku-5-5";
 const MAX_RESUME_ATTEMPTS = 3;
 
 function extractJson(text: string): unknown {
