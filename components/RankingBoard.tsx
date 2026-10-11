@@ -1,0 +1,164 @@
+"use client";
+
+import { useState } from "react";
+import type { Quiz } from "@/lib/quizSchema";
+import { useQuizClock, type FinishResult, type SlotStatus } from "@/lib/useQuizClock";
+import Timer from "./Timer";
+
+interface Props {
+  quiz: Quiz;
+  timeLimitSeconds: number;
+  onFinish: (result: FinishResult) => void;
+}
+
+interface RowState {
+  value: string;
+  status: SlotStatus;
+  wrongCount: number;
+}
+
+function shuffledIndices(length: number): number[] {
+  const indices = Array.from({ length }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices;
+}
+
+function parseRank(value: string): number | null {
+  const match = value.match(/\d+/);
+  if (!match) return null;
+  return parseInt(match[0], 10);
+}
+
+export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
+  const total = quiz.questions.length;
+  const [displayOrder] = useState<number[]>(() => shuffledIndices(total));
+  const [rows, setRows] = useState<RowState[]>(() =>
+    quiz.questions.map(() => ({ value: "", status: "unanswered" as SlotStatus, wrongCount: 0 }))
+  );
+
+  const score = rows.filter((r) => r.status === "correct").length;
+  const allCorrect = total > 0 && score === total;
+
+  const { remainingSeconds, giveUp } = useQuizClock({
+    timeLimitSeconds,
+    allCorrect,
+    onFinish: (reason, timeRemainingSeconds) => {
+      let finalRows = rows;
+      if (reason !== "allCorrect") {
+        finalRows = rows.map((r) =>
+          r.status === "unanswered" ? { ...r, status: "revealed" as SlotStatus } : r
+        );
+        setRows(finalRows);
+      }
+      const finalScore = finalRows.filter((r) => r.status === "correct").length;
+      onFinish({
+        score: finalScore,
+        total,
+        timeRemainingSeconds,
+        reason,
+        slotStatuses: finalRows.map((r) => r.status),
+      });
+    },
+  });
+
+  function handleChange(originalIndex: number, value: string) {
+    setRows((prev) => prev.map((r, idx) => (idx === originalIndex ? { ...r, value } : r)));
+  }
+
+  function handleSubmit(originalIndex: number) {
+    setRows((prev) =>
+      prev.map((r, idx) => {
+        if (idx !== originalIndex || r.status !== "unanswered") return r;
+        const guess = parseRank(r.value);
+        const trueRank = originalIndex + 1;
+        if (guess === trueRank) {
+          return { ...r, status: "correct" as SlotStatus };
+        }
+        return { ...r, wrongCount: r.wrongCount + 1 };
+      })
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <p className="font-medium">
+          {score} / {total} correct
+        </p>
+        <Timer remainingSeconds={remainingSeconds} />
+      </div>
+
+      <h2 className="text-center font-semibold mb-1">{quiz.topic}</h2>
+      <p className="text-center text-sm opacity-70 mb-4">Assign each item its correct rank (1–{total}).</p>
+
+      <div className="space-y-2">
+        {displayOrder.map((originalIndex) => {
+          const q = quiz.questions[originalIndex];
+          const row = rows[originalIndex];
+          const trueRank = originalIndex + 1;
+          const locked = row.status !== "unanswered";
+          const borderClass =
+            row.status === "correct"
+              ? "border-green-500 bg-green-500/10"
+              : row.status === "revealed"
+                ? "border-zinc-400 bg-zinc-500/10"
+                : "border-black/10 dark:border-white/15";
+
+          return (
+            <div key={q.id} className={`relative flex items-center gap-3 rounded-lg border p-3 ${borderClass}`}>
+              {!locked && row.wrongCount > 0 && (
+                <span
+                  key={row.wrongCount}
+                  aria-hidden
+                  className="shake-flash pointer-events-none absolute inset-0 rounded-lg"
+                />
+              )}
+              <span className="flex-1 font-medium">{q.answer}</span>
+              {locked ? (
+                <span
+                  className={`text-sm font-semibold ${
+                    row.status === "correct" ? "text-green-600 dark:text-green-400" : "text-zinc-500"
+                  }`}
+                >
+                  Rank #{trueRank}
+                  {row.status === "revealed" && (
+                    <span className="ml-2 text-xs font-normal opacity-70">(time&apos;s up)</span>
+                  )}
+                </span>
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit(originalIndex);
+                  }}
+                  className="w-24 shrink-0"
+                >
+                  <input
+                    value={row.value}
+                    onChange={(e) => handleChange(originalIndex, e.target.value)}
+                    placeholder={`1–${total}`}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    className="w-full rounded-md border border-black/10 dark:border-white/15 bg-transparent px-2 py-1.5 text-center outline-none focus:border-foreground"
+                  />
+                </form>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 text-center">
+        <button
+          onClick={giveUp}
+          className="text-sm text-zinc-500 hover:text-red-600 underline underline-offset-2"
+        >
+          Give up
+        </button>
+      </div>
+    </div>
+  );
+}

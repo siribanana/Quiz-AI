@@ -17,7 +17,8 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
 ];
 const MODE_OPTIONS: { value: QuizMode; label: string }[] = [
   { value: "general", label: "General" },
-  { value: "naming", label: "Naming/Ranking" },
+  { value: "naming", label: "Naming" },
+  { value: "ranking", label: "Ranking" },
 ];
 
 export default function TopicForm({ onGenerate, generating, error }: Props) {

@@ -1,8 +1,8 @@
 export type Difficulty = "easy" | "difficult" | "hardcore";
-export type QuizMode = "general" | "naming";
+export type QuizMode = "general" | "naming" | "ranking";
 
 export const DIFFICULTIES: Difficulty[] = ["easy", "difficult", "hardcore"];
-export const QUIZ_MODES: QuizMode[] = ["general", "naming"];
+export const QUIZ_MODES: QuizMode[] = ["general", "naming", "ranking"];
 
 export const DEFAULT_QUESTION_COUNT = 10;
 export const MIN_QUESTION_COUNT = 3;
@@ -62,12 +62,15 @@ function buildModeGuidance(mode: QuizMode, count: number): string {
     return "Quiz type: GENERAL. Ask a well-rounded mix of questions about the topic — facts, dates, people, places, causes, effects, numbers, etc. Do not simply ask the user to name items in a list.";
   }
 
-  return `Quiz type: NAMING / RANKING. The topic describes a ranked or listed set of items (e.g. "top ${count} mountains by height", "the ${count} most visited attractions in the world"). Each of the ${count} questions must ask the user to name ONE specific item from that list, identified by its rank or position (e.g. "Ranked #1 by height — name it." or "The 7th most visited attraction in the world is ___."). The "answer" for every question must be just the name of that item (e.g. the mountain name, the attraction name) — never a date, statistic, or other fact about it. Cover ranks 1 through ${count} of the real list (researched via web search), without repeating the same item twice. IMPORTANT: return the "questions" array ordered by rank ascending — index 0 must be rank #1 (the top of the list), index 1 must be rank #2, and so on through index ${count - 1} as rank #${count}. The client displays each question strictly by its array position as "#1", "#2", etc., without reading rank out of the prompt text, so the array order must exactly match the real ranking.`;
+  // "naming" and "ranking" are two different play interactions over the same
+  // underlying data: a ranked list of items. The client decides whether the
+  // player names each item or assigns it a rank — generation is identical.
+  return `Quiz type: RANKED LIST. The topic describes a ranked or listed set of items (e.g. "top ${count} mountains by height", "the ${count} most visited attractions in the world"). Each of the ${count} questions must identify ONE specific item from that list by its rank or position (e.g. "Ranked #1 by height — name it." or "The 7th most visited attraction in the world is ___."). The "answer" for every question must be just the name of that item (e.g. the mountain name, the attraction name) — never a date, statistic, or other fact about it. Cover ranks 1 through ${count} of the real list (researched via web search), without repeating the same item twice. IMPORTANT: return the "questions" array ordered by rank ascending — index 0 must be rank #1 (the top of the list), index 1 must be rank #2, and so on through index ${count - 1} as rank #${count}. The client relies strictly on array position for rank — index 0 is always treated as rank #1 — so the array order must exactly match the real ranking.`;
 }
 
 export function buildSystemPrompt(difficulty: Difficulty, mode: QuizMode, count: number): string {
   const base = buildBaseSystemPrompt(count);
-  if (mode === "naming") {
+  if (mode !== "general") {
     return `${base}\n\n${buildModeGuidance(mode, count)}`;
   }
   return `${base}\n\n${DIFFICULTY_GUIDANCE[difficulty]}\n\n${buildModeGuidance(mode, count)}`;

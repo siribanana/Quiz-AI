@@ -7,6 +7,7 @@ import type { FinishResult } from "@/lib/useQuizClock";
 import TopicForm from "./TopicForm";
 import QuizBoard from "./QuizBoard";
 import NamingBoard from "./NamingBoard";
+import RankingBoard from "./RankingBoard";
 import ResultsSummary from "./ResultsSummary";
 
 type Phase = "idle" | "generating" | "ready" | "playing" | "finished";
@@ -19,7 +20,8 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 
 const MODE_LABELS: Record<QuizMode, string> = {
   general: "general",
-  naming: "naming/ranking",
+  naming: "naming",
+  ranking: "ranking",
 };
 
 export default function QuizApp() {
@@ -111,6 +113,10 @@ export default function QuizApp() {
 
       {phase === "playing" && quiz && mode === "naming" && (
         <NamingBoard quiz={quiz} timeLimitSeconds={timeLimitSeconds} onFinish={handleFinish} />
+      )}
+
+      {phase === "playing" && quiz && mode === "ranking" && (
+        <RankingBoard quiz={quiz} timeLimitSeconds={timeLimitSeconds} onFinish={handleFinish} />
       )}
 
       {phase === "playing" && quiz && mode === "general" && (
