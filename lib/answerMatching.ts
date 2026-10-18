@@ -37,7 +37,7 @@ function typoThreshold(normalized: string): number {
   return 2;
 }
 
-function escapeRegExp(input: string): string {
+export function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

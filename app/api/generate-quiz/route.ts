@@ -11,7 +11,7 @@ import {
   type Difficulty,
   type QuizMode,
 } from "@/lib/prompt";
-import { QUIZ_JSON_SCHEMA, isValidQuizShape, type Quiz } from "@/lib/quizSchema";
+import { QUIZ_JSON_SCHEMA, findAnswerLeaks, isValidQuizShape, type Quiz } from "@/lib/quizSchema";
 
 export const maxDuration = 60;
 
@@ -81,7 +81,7 @@ async function generateQuiz(
   mode: QuizMode,
   count: number
 ): Promise<Quiz> {
-  const messages: MessageParam[] = [{ role: "user", content: buildUserPrompt(topic, count) }];
+  let messages: MessageParam[] = [{ role: "user", content: buildUserPrompt(topic, count) }];
   let maxTokens = Math.max(8000, count * 900);
 
   let message = await resolveFinalMessage(messages, maxTokens, difficulty, mode, count);
@@ -109,7 +109,7 @@ async function generateQuiz(
   if (quiz.questions.length > count) {
     quiz = { ...quiz, questions: quiz.questions.slice(0, count) };
   } else if (quiz.questions.length < count) {
-    const retryMessages: MessageParam[] = [
+    messages = [
       ...messages,
       { role: "assistant", content: message.content },
       {
@@ -117,13 +117,32 @@ async function generateQuiz(
         content: `You returned only ${quiz.questions.length} questions. Please return exactly ${count} questions.`,
       },
     ];
-    const retryMessage = await resolveFinalMessage(retryMessages, maxTokens, difficulty, mode, count);
-    const retryParsed = extractJson(finalTextOf(retryMessage));
+    message = await resolveFinalMessage(messages, maxTokens, difficulty, mode, count);
+    const retryParsed = extractJson(finalTextOf(message));
     if (isValidQuizShape(retryParsed) && retryParsed.questions.length >= count) {
       quiz = { ...retryParsed, questions: retryParsed.questions.slice(0, count) };
     } else {
       throw new Error(`Could not obtain ${count} questions after retry`);
     }
+  }
+
+  const leaks = findAnswerLeaks(quiz.questions);
+  if (leaks.length > 0) {
+    const fixMessages: MessageParam[] = [
+      ...messages,
+      { role: "assistant", content: message.content },
+      {
+        role: "user",
+        content: `Some questions leak answers to other questions. Fix the following issues by rewriting only the affected prompts — keep every question's id, answer, and acceptableAnswers unchanged, and keep exactly ${count} questions:\n\n${leaks.join("\n")}\n\nReturn the complete corrected quiz.`,
+      },
+    ];
+    const fixMessage = await resolveFinalMessage(fixMessages, maxTokens, difficulty, mode, count);
+    const fixParsed = extractJson(finalTextOf(fixMessage));
+    if (isValidQuizShape(fixParsed) && fixParsed.questions.length === count) {
+      quiz = fixParsed;
+    }
+    // If the fix attempt failed or came back malformed, fall through with the
+    // original quiz rather than failing the whole request over a leak.
   }
 
   quiz = {
