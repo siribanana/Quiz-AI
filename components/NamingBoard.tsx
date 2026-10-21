@@ -68,39 +68,29 @@ export default function NamingBoard({ quiz, timeLimitSeconds, onFinish }: Props)
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <p className="font-medium">
-          {score} / {quiz.questions.length} correct
+        <p className="text-sm">
+          <span className="text-sub lowercase">score </span>
+          <span className="font-mono text-xl text-foreground">
+            {score}/{quiz.questions.length}
+          </span>
         </p>
         <Timer remainingSeconds={remainingSeconds} />
       </div>
 
-      <h2 className="text-center font-semibold mb-4">{quiz.topic}</h2>
+      <h2 className="text-center font-semibold mb-4 text-foreground">{quiz.topic}</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
         {quiz.questions.map((q, i) => {
           const status = slotStatuses[i];
+          const bgClass =
+            status === "correct" ? "bg-correct/10" : status === "revealed" ? "bg-sub-alt/40" : "bg-background-alt";
           return (
-            <div
-              key={q.id}
-              className={`flex items-baseline gap-2 rounded-md border px-3 py-2 ${
-                status === "correct"
-                  ? "border-green-500 bg-green-500/10"
-                  : status === "revealed"
-                    ? "border-zinc-400 bg-zinc-500/10"
-                    : "border-black/10 dark:border-white/15"
-              }`}
-            >
-              <span className="text-sm opacity-60 w-6 shrink-0">{i + 1}.</span>
+            <div key={q.id} className={`flex items-baseline gap-2 rounded-md px-3 py-2 transition-colors ${bgClass}`}>
+              <span className="text-sm font-mono text-accent w-6 shrink-0">{i + 1}.</span>
               {status === "unanswered" ? (
-                <span className="flex-1 border-b border-dotted border-current opacity-40">
-                  &nbsp;
-                </span>
+                <span className="flex-1 border-b border-dotted border-sub opacity-60">&nbsp;</span>
               ) : (
-                <span
-                  className={`flex-1 font-medium ${
-                    status === "correct" ? "text-green-600 dark:text-green-400" : "text-zinc-500"
-                  }`}
-                >
+                <span className={`flex-1 font-medium ${status === "correct" ? "text-correct" : "text-sub"}`}>
                   {q.answer}
                 </span>
               )}
@@ -114,7 +104,7 @@ export default function NamingBoard({ quiz, timeLimitSeconds, onFinish }: Props)
           <span
             key={attemptSeq}
             aria-hidden
-            className={`pointer-events-none absolute inset-0 rounded-lg ${
+            className={`pointer-events-none absolute inset-0 rounded-md ${
               lastResult === "correct" ? "flash-correct" : "shake-flash"
             }`}
           />
@@ -126,17 +116,17 @@ export default function NamingBoard({ quiz, timeLimitSeconds, onFinish }: Props)
           disabled={remainingCount === 0}
           autoFocus
           autoComplete="off"
-          placeholder="Type any answer…"
-          className="relative w-full rounded-lg border border-black/10 dark:border-white/15 bg-transparent p-3 outline-none focus:border-foreground disabled:opacity-60"
+          placeholder="type any answer…"
+          className="relative w-full rounded-md border border-sub-alt bg-background-alt p-3 font-mono text-foreground placeholder:text-sub outline-none focus:border-accent disabled:opacity-50 transition-colors"
         />
       </form>
 
       <div className="text-center">
         <button
           onClick={giveUp}
-          className="text-sm text-zinc-500 hover:text-red-600 underline underline-offset-2"
+          className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
         >
-          Give up
+          give up
         </button>
       </div>
     </div>

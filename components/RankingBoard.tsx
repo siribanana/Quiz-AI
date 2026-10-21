@@ -97,14 +97,19 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <p className="font-medium">
-          {score} / {total} correct
+        <p className="text-sm">
+          <span className="text-sub lowercase">score </span>
+          <span className="font-mono text-xl text-foreground">
+            {score}/{total}
+          </span>
         </p>
         <Timer remainingSeconds={remainingSeconds} />
       </div>
 
-      <h2 className="text-center font-semibold mb-1">{quiz.topic}</h2>
-      <p className="text-center text-sm opacity-70 mb-4">Assign each item its correct rank (1–{total}).</p>
+      <h2 className="text-center font-semibold mb-1 text-foreground">{quiz.topic}</h2>
+      <p className="text-center text-sm text-sub mb-4 lowercase">
+        assign each item its correct rank (1–{total})
+      </p>
 
       <div className="space-y-2">
         {displayOrder.map((originalIndex) => {
@@ -112,32 +117,32 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
           const row = rows[originalIndex];
           const trueRank = originalIndex + 1;
           const locked = row.status !== "unanswered";
-          const borderClass =
+          const bgClass =
             row.status === "correct"
-              ? "border-green-500 bg-green-500/10"
+              ? "bg-correct/10"
               : row.status === "revealed"
-                ? "border-zinc-400 bg-zinc-500/10"
-                : "border-black/10 dark:border-white/15";
+                ? "bg-sub-alt/40"
+                : "bg-background-alt";
 
           return (
-            <div key={q.id} className={`relative flex items-center gap-3 rounded-lg border p-3 ${borderClass}`}>
+            <div key={q.id} className={`relative flex items-center gap-3 rounded-md p-3 transition-colors ${bgClass}`}>
               {!locked && row.wrongCount > 0 && (
                 <span
                   key={row.wrongCount}
                   aria-hidden
-                  className="shake-flash pointer-events-none absolute inset-0 rounded-lg"
+                  className="shake-flash pointer-events-none absolute inset-0 rounded-md"
                 />
               )}
-              <span className="flex-1 font-medium">{q.answer}</span>
+              <span className="flex-1 font-medium text-foreground">{q.answer}</span>
               {locked ? (
                 <span
-                  className={`text-sm font-semibold ${
-                    row.status === "correct" ? "text-green-600 dark:text-green-400" : "text-zinc-500"
+                  className={`text-sm font-semibold font-mono ${
+                    row.status === "correct" ? "text-correct" : "text-sub"
                   }`}
                 >
-                  Rank #{trueRank}
+                  #{trueRank}
                   {row.status === "revealed" && (
-                    <span className="ml-2 text-xs font-normal opacity-70">(time&apos;s up)</span>
+                    <span className="ml-2 text-xs font-normal lowercase font-sans">(time&apos;s up)</span>
                   )}
                 </span>
               ) : (
@@ -154,7 +159,7 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
                     placeholder={`1–${total}`}
                     inputMode="numeric"
                     autoComplete="off"
-                    className="w-full rounded-md border border-black/10 dark:border-white/15 bg-transparent px-2 py-1.5 text-center outline-none focus:border-foreground"
+                    className="w-full rounded-md border border-sub-alt bg-background px-2 py-1.5 text-center font-mono text-foreground placeholder:text-sub outline-none focus:border-accent transition-colors"
                   />
                 </form>
               )}
@@ -166,9 +171,9 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
       <div className="mt-6 text-center">
         <button
           onClick={giveUp}
-          className="text-sm text-zinc-500 hover:text-red-600 underline underline-offset-2"
+          className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
         >
-          Give up
+          give up
         </button>
       </div>
     </div>

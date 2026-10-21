@@ -84,9 +84,11 @@ export default function QuizApp() {
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-10 sm:py-16">
-      <h1 className="text-3xl font-bold mb-2 text-center">Quiz AI</h1>
-      <p className="text-center text-sm mb-8 opacity-70">
-        Type any topic — we&apos;ll research it and build you a timed fill-in-the-blank quiz.
+      <h1 className="text-4xl font-bold mb-2 text-center lowercase text-accent tracking-tight">
+        quiz ai
+      </h1>
+      <p className="text-center text-sm mb-8 text-sub">
+        type any topic — we&apos;ll research it and build you a timed fill-in-the-blank quiz
       </p>
 
       {(phase === "idle" || phase === "generating") && (
@@ -95,18 +97,21 @@ export default function QuizApp() {
 
       {phase === "ready" && quiz && (
         <div className="text-center space-y-4">
-          <p>
-            Your quiz on <strong>{quiz.topic}</strong> is ready — {minutes} minute
-            {minutes === 1 ? "" : "s"}, {quiz.questions.length} questions
-            {mode === "general" && `, ${DIFFICULTY_LABELS[difficulty].toLowerCase()} difficulty`}
-            {", "}
-            {MODE_LABELS[mode]} quiz.
+          <p className="text-foreground">
+            your quiz on <strong className="text-accent">{quiz.topic}</strong> is ready —{" "}
+            <span className="text-sub">
+              {minutes} minute
+              {minutes === 1 ? "" : "s"}, {quiz.questions.length} questions
+              {mode === "general" && `, ${DIFFICULTY_LABELS[difficulty].toLowerCase()} difficulty`}
+              {", "}
+              {MODE_LABELS[mode]} quiz
+            </span>
           </p>
           <button
             onClick={handleStart}
-            className="rounded-full bg-foreground text-background px-8 py-3 font-medium"
+            className="rounded-md bg-accent text-accent-ink px-8 py-3 font-semibold lowercase transition-[filter] hover:brightness-110"
           >
-            Start Quiz
+            start quiz
           </button>
         </div>
       )}

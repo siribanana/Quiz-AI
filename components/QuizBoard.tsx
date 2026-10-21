@@ -70,8 +70,11 @@ export default function QuizBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <p className="font-medium">
-          {score} / {quiz.questions.length} correct
+        <p className="text-sm">
+          <span className="text-sub lowercase">score </span>
+          <span className="font-mono text-xl text-foreground">
+            {score}/{quiz.questions.length}
+          </span>
         </p>
         <Timer remainingSeconds={remainingSeconds} />
       </div>
@@ -93,9 +96,9 @@ export default function QuizBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
       <div className="mt-6 text-center">
         <button
           onClick={giveUp}
-          className="text-sm text-zinc-500 hover:text-red-600 underline underline-offset-2"
+          className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
         >
-          Give up
+          give up
         </button>
       </div>
     </div>

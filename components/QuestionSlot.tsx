@@ -24,30 +24,23 @@ export default function QuestionSlot({
   onSubmit,
 }: Props) {
   const locked = status !== "unanswered";
-  const borderClass =
-    status === "correct"
-      ? "border-green-500 bg-green-500/10"
-      : status === "revealed"
-        ? "border-zinc-400 bg-zinc-500/10"
-        : "border-black/10 dark:border-white/15";
+  const bgClass =
+    status === "correct" ? "bg-correct/10" : status === "revealed" ? "bg-sub-alt/40" : "bg-background-alt";
 
   return (
-    <div className={`relative rounded-lg border p-3 transition-colors ${borderClass}`}>
+    <div className={`relative rounded-md p-3 transition-colors ${bgClass}`}>
       {status === "unanswered" && wrongPulse > 0 && (
-        <span key={wrongPulse} aria-hidden className="shake-flash pointer-events-none absolute inset-0 rounded-lg" />
+        <span key={wrongPulse} aria-hidden className="shake-flash pointer-events-none absolute inset-0 rounded-md" />
       )}
-      <p className="text-sm mb-2 opacity-80">
-        {index + 1}. {prompt}
+      <p className="text-sm mb-2">
+        <span className="font-mono text-accent">{index + 1}.</span>{" "}
+        <span className="text-foreground">{prompt}</span>
       </p>
       {locked ? (
-        <p
-          className={`font-semibold ${
-            status === "correct" ? "text-green-600 dark:text-green-400" : "text-zinc-500"
-          }`}
-        >
+        <p className={`font-semibold ${status === "correct" ? "text-correct" : "text-sub"}`}>
           {answer}
           {status === "revealed" && (
-            <span className="ml-2 text-xs font-normal opacity-70">(time&apos;s up)</span>
+            <span className="ml-2 text-xs font-normal lowercase text-sub">(time&apos;s up)</span>
           )}
         </p>
       ) : (
@@ -60,9 +53,9 @@ export default function QuestionSlot({
           <input
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="Your answer"
+            placeholder="your answer"
             autoComplete="off"
-            className="w-full rounded-md border border-black/10 dark:border-white/15 bg-transparent px-2 py-1.5 outline-none focus:border-foreground"
+            className="w-full rounded-md border border-sub-alt bg-background px-2 py-1.5 font-mono text-foreground placeholder:text-sub outline-none focus:border-accent transition-colors"
           />
         </form>
       )}

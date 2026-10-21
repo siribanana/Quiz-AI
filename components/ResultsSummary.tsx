@@ -19,44 +19,42 @@ export default function ResultsSummary({ quiz, result, timeLimitSeconds, onNewQu
   return (
     <div className="space-y-6">
       <div className="text-center space-y-1">
-        <h2 className="text-2xl font-bold">
-          {result.score} / {result.total} correct
+        <h2 className="font-mono text-3xl font-bold text-foreground">
+          {result.score}/{result.total}
         </h2>
-        <p className="opacity-70 text-sm">
+        <p className="text-sm text-sub lowercase">
           {result.reason === "allCorrect"
-            ? `Finished with ${formatDuration(result.timeRemainingSeconds)} to spare!`
+            ? `finished with ${formatDuration(result.timeRemainingSeconds)} to spare!`
             : result.reason === "gaveUp"
-              ? `You gave up — used ${formatDuration(timeUsed)}.`
-              : `Time's up — used ${formatDuration(timeUsed)}.`}
+              ? `you gave up — used ${formatDuration(timeUsed)}`
+              : `time's up — used ${formatDuration(timeUsed)}`}
         </p>
       </div>
       <div className="space-y-2">
         {quiz.questions.map((q, i) => (
           <div
             key={q.id}
-            className="flex items-start justify-between gap-4 rounded-lg border border-black/10 dark:border-white/15 p-3"
+            className="flex items-start justify-between gap-4 rounded-md bg-background-alt p-3"
           >
             <div>
-              <p className="text-sm opacity-80">{q.prompt}</p>
-              <p className="font-medium">{q.answer}</p>
+              <p className="text-sm text-sub">{q.prompt}</p>
+              <p className="font-medium text-foreground">{q.answer}</p>
             </div>
             <span
-              className={
-                result.slotStatuses[i] === "correct"
-                  ? "text-green-600 dark:text-green-400 shrink-0"
-                  : "text-zinc-500 shrink-0"
-              }
+              className={`shrink-0 text-sm lowercase ${
+                result.slotStatuses[i] === "correct" ? "text-correct" : "text-error"
+              }`}
             >
-              {result.slotStatuses[i] === "correct" ? "Correct" : "Missed"}
+              {result.slotStatuses[i] === "correct" ? "correct" : "missed"}
             </span>
           </div>
         ))}
       </div>
       <button
         onClick={onNewQuiz}
-        className="w-full rounded-full bg-foreground text-background py-3 font-medium"
+        className="w-full rounded-md bg-accent text-accent-ink py-3 font-semibold lowercase transition-[filter] hover:brightness-110"
       >
-        New Quiz
+        new quiz
       </button>
     </div>
   );

@@ -9,8 +9,8 @@ export default function Timer({ remainingSeconds }: Props) {
 
   return (
     <div
-      className={`text-2xl font-mono font-bold tabular-nums ${
-        low ? "text-red-600 animate-pulse" : ""
+      className={`font-mono font-bold text-3xl tabular-nums ${
+        low ? "text-error animate-pulse" : "text-accent"
       }`}
     >
       {minutes}:{seconds.toString().padStart(2, "0")}
