@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Lexend_Deca, Roboto_Mono } from "next/font/google";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 import "./globals.css";
 
 const lexendDeca = Lexend_Deca({
@@ -17,13 +18,31 @@ export const metadata: Metadata = {
   description: "Generate a timed fill-in-the-blank quiz on any topic.",
 };
 
+// Sets the theme attribute before paint so switching themes doesn't flash
+// the default colors on reload. Must stay in sync with THEME_STORAGE_KEY
+// in lib/theme.ts since it runs before any JS module loads.
+const THEME_BOOTSTRAP_SCRIPT = `
+(function () {
+  try {
+    var t = localStorage.getItem("quizai-theme");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${lexendDeca.variable} ${robotoMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <ThemeSwitcher />
+      </body>
     </html>
   );
 }
