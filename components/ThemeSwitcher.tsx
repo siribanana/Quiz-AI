@@ -17,9 +17,22 @@ function readInitialTheme(): string {
 }
 
 export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState<string>(readInitialTheme);
+  // Always starts at the default so the server-rendered markup and the
+  // client's first render match exactly (no hydration mismatch) — the real
+  // stored/URL theme is applied right after mount, once we're safely
+  // client-only. The <html> element's colors are already correct from the
+  // very first paint regardless, via the blocking script in layout.tsx.
+  const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const actual = readInitialTheme();
+      if (actual !== DEFAULT_THEME_ID) setTheme(actual);
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -71,7 +84,6 @@ export default function ThemeSwitcher() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        suppressHydrationWarning
         className="flex items-center gap-2 rounded-md bg-background-alt px-3 py-1.5 text-sm lowercase text-sub transition-colors hover:text-foreground"
       >
         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: current.swatch }} aria-hidden />
