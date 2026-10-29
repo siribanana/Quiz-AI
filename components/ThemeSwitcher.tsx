@@ -78,9 +78,9 @@ export default function ThemeSwitcher() {
   }, [filter]);
 
   return (
-    <div ref={containerRef} className="fixed bottom-4 left-4 z-50">
+    <div ref={containerRef} className="fixed bottom-4 right-4 z-50">
       {open && (
-        <div className="absolute bottom-full left-0 mb-2 w-56 rounded-md bg-background-alt p-1 shadow-lg">
+        <div className="absolute bottom-full right-0 mb-2 w-56 rounded-md bg-background-alt p-1 shadow-lg">
           <input
             ref={filterRef}
             value={filter}
