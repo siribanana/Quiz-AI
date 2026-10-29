@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* All 187 official Monkeytype themes. Generated from
+   frontend/src/ts/constants/themes.ts in monkeytypegame/monkeytype —
+   regenerate rather than hand-editing individual blocks. */
+@import "./themes.css";
+
 /* "serika dark" — the default theme */
 :root {
   --background: #323437;
@@ -11,19 +16,6 @@
   --accent-ink: #1a1a1a;
   --correct: #98c379;
   --error: #ca4754;
-}
-
-/* "hammerhead" */
-:root[data-theme="hammerhead"] {
-  --background: #030613;
-  --background-alt: #1e283a;
-  --foreground: #e2f1f5;
-  --sub: #5d7290;
-  --sub-alt: #2e3a4f;
-  --accent: #4fcdb9;
-  --accent-ink: #030613;
-  --correct: #4fcdb9;
-  --error: #e32b2b;
 }
 
 @theme inline {

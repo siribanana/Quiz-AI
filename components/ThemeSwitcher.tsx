@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_THEME_ID, THEME_STORAGE_KEY, THEMES, isThemeId } from "@/lib/theme";
 
 function readInitialTheme(): string {
@@ -24,7 +24,9 @@ export default function ThemeSwitcher() {
   // very first paint regardless, via the blocking script in layout.tsx.
   const [theme, setTheme] = useState<string>(DEFAULT_THEME_ID);
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -47,6 +49,7 @@ export default function ThemeSwitcher() {
   function selectTheme(id: string) {
     setTheme(id);
     setOpen(false);
+    setFilter("");
     document.documentElement.setAttribute("data-theme", id);
     try {
       window.localStorage.setItem(THEME_STORAGE_KEY, id);
@@ -55,34 +58,65 @@ export default function ThemeSwitcher() {
     }
   }
 
+  function toggleOpen() {
+    setOpen((o) => {
+      const next = !o;
+      if (next) {
+        // focus the filter input once it's rendered
+        setTimeout(() => filterRef.current?.focus(), 0);
+      }
+      return next;
+    });
+  }
+
   const current = THEMES.find((t) => t.id === theme) ?? THEMES[0];
 
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return THEMES;
+    return THEMES.filter((t) => t.label.includes(q) || t.id.includes(q));
+  }, [filter]);
+
   return (
-    <div ref={containerRef} className="fixed bottom-4 right-4 z-50">
+    <div ref={containerRef} className="fixed bottom-4 left-4 z-50">
       {open && (
-        <div className="absolute bottom-full right-0 mb-2 min-w-[150px] rounded-md bg-background-alt p-1 shadow-lg">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => selectTheme(t.id)}
-              className={`flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm lowercase transition-colors ${
-                t.id === theme ? "text-accent" : "text-sub hover:text-foreground"
-              }`}
-            >
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: t.swatch }}
-                aria-hidden
-              />
-              {t.label}
-            </button>
-          ))}
+        <div className="absolute bottom-full left-0 mb-2 w-56 rounded-md bg-background-alt p-1 shadow-lg">
+          <input
+            ref={filterRef}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="filter themes…"
+            autoComplete="off"
+            className="mb-1 w-full rounded-md border border-sub-alt bg-background px-2 py-1 text-sm text-foreground placeholder:text-sub outline-none focus:border-accent"
+          />
+          <div className="max-h-64 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-sub lowercase">no themes match</p>
+            ) : (
+              filtered.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => selectTheme(t.id)}
+                  className={`flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm lowercase transition-colors ${
+                    t.id === theme ? "text-accent" : "text-sub hover:text-foreground"
+                  }`}
+                >
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: t.swatch }}
+                    aria-hidden
+                  />
+                  <span className="truncate">{t.label}</span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         aria-expanded={open}
         className="flex items-center gap-2 rounded-md bg-background-alt px-3 py-1.5 text-sm lowercase text-sub transition-colors hover:text-foreground"
       >
