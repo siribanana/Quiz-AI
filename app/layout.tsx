@@ -19,13 +19,19 @@ export const metadata: Metadata = {
 };
 
 // Sets the theme attribute before paint so switching themes doesn't flash
-// the default colors on reload. Must stay in sync with THEME_STORAGE_KEY
-// in lib/theme.ts since it runs before any JS module loads.
+// the default colors on reload, and lets a URL like /?theme=hammerhead open
+// straight into that theme. Must stay in sync with THEME_STORAGE_KEY and the
+// theme ids in lib/theme.ts since it runs before any JS module loads.
 const THEME_BOOTSTRAP_SCRIPT = `
 (function () {
   try {
-    var t = localStorage.getItem("quizai-theme");
-    if (t) document.documentElement.setAttribute("data-theme", t);
+    var validThemes = ["serika-dark", "hammerhead"];
+    var qp = new URLSearchParams(location.search).get("theme");
+    var t = (qp && validThemes.indexOf(qp) !== -1) ? qp : localStorage.getItem("quizai-theme");
+    if (t) {
+      document.documentElement.setAttribute("data-theme", t);
+      if (qp) localStorage.setItem("quizai-theme", qp);
+    }
   } catch (e) {}
 })();
 `;

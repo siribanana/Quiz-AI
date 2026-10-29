@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_THEME_ID, THEME_STORAGE_KEY, THEMES, isThemeId } from "@/lib/theme";
 
-function readStoredTheme(): string {
+function readInitialTheme(): string {
   if (typeof window === "undefined") return DEFAULT_THEME_ID;
   try {
+    const fromUrl = new URLSearchParams(window.location.search).get("theme");
+    if (fromUrl && isThemeId(fromUrl)) return fromUrl;
+
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     return stored && isThemeId(stored) ? stored : DEFAULT_THEME_ID;
   } catch {
@@ -14,7 +17,7 @@ function readStoredTheme(): string {
 }
 
 export default function ThemeSwitcher() {
-  const [theme, setTheme] = useState<string>(readStoredTheme);
+  const [theme, setTheme] = useState<string>(readInitialTheme);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
