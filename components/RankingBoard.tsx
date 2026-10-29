@@ -1,6 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Quiz } from "@/lib/quizSchema";
 import { useQuizClock, type FinishResult, type SlotStatus } from "@/lib/useQuizClock";
 import Timer from "./Timer";
@@ -11,11 +28,7 @@ interface Props {
   onFinish: (result: FinishResult) => void;
 }
 
-interface RowState {
-  value: string;
-  status: SlotStatus;
-  wrongCount: number;
-}
+type PositionFeedback = "correct" | "incorrect" | null;
 
 function shuffleOnce(length: number): number[] {
   const indices = Array.from({ length }, (_, i) => i);
@@ -38,60 +51,56 @@ function shuffledIndices(length: number): number[] {
   return indices;
 }
 
-function parseRank(value: string): number | null {
-  const match = value.match(/\d+/);
-  if (!match) return null;
-  return parseInt(match[0], 10);
-}
-
 export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
   const total = quiz.questions.length;
-  const [displayOrder] = useState<number[]>(() => shuffledIndices(total));
-  const [rows, setRows] = useState<RowState[]>(() =>
-    quiz.questions.map(() => ({ value: "", status: "unanswered" as SlotStatus, wrongCount: 0 }))
-  );
+  const [order, setOrder] = useState<number[]>(() => shuffledIndices(total));
+  const [feedback, setFeedback] = useState<PositionFeedback[]>(() => Array(total).fill(null));
+  const [lastCheckedScore, setLastCheckedScore] = useState<number | null>(null);
+  const [flashToken, setFlashToken] = useState(0);
 
-  const score = rows.filter((r) => r.status === "correct").length;
-  const allCorrect = total > 0 && score === total;
+  const allCorrect = lastCheckedScore === total;
 
   const { remainingSeconds, giveUp } = useQuizClock({
     timeLimitSeconds,
     allCorrect,
     onFinish: (reason, timeRemainingSeconds) => {
-      let finalRows = rows;
-      if (reason !== "allCorrect") {
-        finalRows = rows.map((r) =>
-          r.status === "unanswered" ? { ...r, status: "revealed" as SlotStatus } : r
-        );
-        setRows(finalRows);
-      }
-      const finalScore = finalRows.filter((r) => r.status === "correct").length;
+      const slotStatuses: SlotStatus[] = Array(total).fill("revealed");
+      order.forEach((originalIndex, position) => {
+        if (position === originalIndex) slotStatuses[originalIndex] = "correct";
+      });
+      const finalScore = slotStatuses.filter((s) => s === "correct").length;
       onFinish({
         score: finalScore,
         total,
         timeRemainingSeconds,
         reason,
-        slotStatuses: finalRows.map((r) => r.status),
+        slotStatuses,
       });
     },
   });
 
-  function handleChange(originalIndex: number, value: string) {
-    setRows((prev) => prev.map((r, idx) => (idx === originalIndex ? { ...r, value } : r)));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeIndex = order.findIndex((originalIndex) => quiz.questions[originalIndex].id === active.id);
+    const overIndex = order.findIndex((originalIndex) => quiz.questions[originalIndex].id === over.id);
+    if (activeIndex === -1 || overIndex === -1) return;
+    setOrder((prev) => arrayMove(prev, activeIndex, overIndex));
+    setFeedback(Array(total).fill(null));
   }
 
-  function handleSubmit(originalIndex: number) {
-    setRows((prev) =>
-      prev.map((r, idx) => {
-        if (idx !== originalIndex || r.status !== "unanswered") return r;
-        const guess = parseRank(r.value);
-        const trueRank = originalIndex + 1;
-        if (guess === trueRank) {
-          return { ...r, status: "correct" as SlotStatus };
-        }
-        return { ...r, wrongCount: r.wrongCount + 1 };
-      })
+  function handleCheck() {
+    const result = order.map<PositionFeedback>((originalIndex, position) =>
+      position === originalIndex ? "correct" : "incorrect"
     );
+    setFeedback(result);
+    setLastCheckedScore(result.filter((f) => f === "correct").length);
+    setFlashToken((t) => t + 1);
   }
 
   return (
@@ -100,7 +109,7 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
         <p className="text-sm">
           <span className="text-sub lowercase">score </span>
           <span className="font-mono text-xl text-foreground">
-            {score}/{total}
+            {lastCheckedScore === null ? "–" : lastCheckedScore}/{total}
           </span>
         </p>
         <Timer remainingSeconds={remainingSeconds} />
@@ -108,67 +117,36 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
 
       <h2 className="text-center font-semibold mb-1 text-foreground">{quiz.topic}</h2>
       <p className="text-center text-sm text-sub mb-4 lowercase">
-        assign each item its correct rank (1–{total})
+        drag into order — #1 at the top, #{total} at the bottom — then check
       </p>
 
-      <div className="space-y-2">
-        {displayOrder.map((originalIndex) => {
-          const q = quiz.questions[originalIndex];
-          const row = rows[originalIndex];
-          const trueRank = originalIndex + 1;
-          const locked = row.status !== "unanswered";
-          const bgClass =
-            row.status === "correct"
-              ? "bg-correct/10"
-              : row.status === "revealed"
-                ? "bg-sub-alt/40"
-                : "bg-background-alt";
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={order.map((originalIndex) => quiz.questions[originalIndex].id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2">
+            {order.map((originalIndex, position) => (
+              <RankingRow
+                key={quiz.questions[originalIndex].id}
+                id={quiz.questions[originalIndex].id}
+                label={quiz.questions[originalIndex].answer}
+                position={position}
+                feedback={feedback[position]}
+                flashToken={flashToken}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
-          return (
-            <div key={q.id} className={`relative flex items-center gap-3 rounded-md p-3 transition-colors ${bgClass}`}>
-              {!locked && row.wrongCount > 0 && (
-                <span
-                  key={row.wrongCount}
-                  aria-hidden
-                  className="shake-flash pointer-events-none absolute inset-0 rounded-md"
-                />
-              )}
-              <span className="flex-1 font-medium text-foreground">{q.answer}</span>
-              {locked ? (
-                <span
-                  className={`text-sm font-semibold font-mono ${
-                    row.status === "correct" ? "text-correct" : "text-sub"
-                  }`}
-                >
-                  #{trueRank}
-                  {row.status === "revealed" && (
-                    <span className="ml-2 text-xs font-normal lowercase font-sans">(time&apos;s up)</span>
-                  )}
-                </span>
-              ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSubmit(originalIndex);
-                  }}
-                  className="w-24 shrink-0"
-                >
-                  <input
-                    value={row.value}
-                    onChange={(e) => handleChange(originalIndex, e.target.value)}
-                    placeholder={`1–${total}`}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    className="w-full rounded-md border border-sub-alt bg-background px-2 py-1.5 text-center font-mono text-foreground placeholder:text-sub outline-none focus:border-accent transition-colors"
-                  />
-                </form>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 text-center">
+      <div className="mt-6 flex items-center justify-center gap-4">
+        <button
+          onClick={handleCheck}
+          className="rounded-md bg-accent text-accent-ink px-6 py-2 font-semibold lowercase transition-[filter] hover:brightness-110"
+        >
+          check order
+        </button>
         <button
           onClick={giveUp}
           className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
@@ -177,5 +155,74 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
         </button>
       </div>
     </div>
+  );
+}
+
+interface RankingRowProps {
+  id: number;
+  label: string;
+  position: number;
+  feedback: PositionFeedback;
+  flashToken: number;
+}
+
+function RankingRow({ id, label, position, feedback, flashToken }: RankingRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const bgClass = feedback === "correct" ? "bg-correct/10" : "bg-background-alt";
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative flex items-center gap-3 rounded-md p-3 transition-colors ${bgClass} ${
+        isDragging ? "z-10 opacity-60" : ""
+      }`}
+    >
+      {feedback === "incorrect" && (
+        <span
+          key={flashToken}
+          aria-hidden
+          className="shake-flash pointer-events-none absolute inset-0 rounded-md"
+        />
+      )}
+      {feedback === "correct" && (
+        <span
+          key={flashToken}
+          aria-hidden
+          className="flash-correct pointer-events-none absolute inset-0 rounded-md"
+        />
+      )}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label="drag to reorder"
+        className="shrink-0 touch-none text-sub transition-colors hover:text-foreground active:cursor-grabbing cursor-grab"
+      >
+        <GripIcon />
+      </button>
+      <span className="w-6 shrink-0 text-right font-mono text-sm text-sub">{position + 1}.</span>
+      <span className="flex-1 font-medium text-foreground">{label}</span>
+      {feedback === "correct" && <span className="shrink-0 text-sm font-semibold text-correct">✓</span>}
+    </div>
+  );
+}
+
+function GripIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      <circle cx="5" cy="3" r="1.3" />
+      <circle cx="11" cy="3" r="1.3" />
+      <circle cx="5" cy="8" r="1.3" />
+      <circle cx="11" cy="8" r="1.3" />
+      <circle cx="5" cy="13" r="1.3" />
+      <circle cx="11" cy="13" r="1.3" />
+    </svg>
   );
 }
