@@ -97,7 +97,7 @@ export default function QuizBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
       <div className="mt-6 text-center">
         <button
           onClick={requestGiveUp}
-          className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
+          className="text-sm lowercase text-sub hover:text-accent underline-offset-2 hover:underline transition-colors"
         >
           give up
         </button>

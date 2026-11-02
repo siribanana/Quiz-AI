@@ -40,7 +40,7 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-md bg-error px-4 py-1.5 text-sm font-semibold lowercase text-white transition-[filter] hover:brightness-110"
+            className="rounded-md bg-accent px-4 py-1.5 text-sm font-semibold lowercase text-accent-ink transition-[filter] hover:brightness-110"
           >
             {confirmLabel}
           </button>

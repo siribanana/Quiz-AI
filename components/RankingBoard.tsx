@@ -150,7 +150,7 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
         </button>
         <button
           onClick={requestGiveUp}
-          className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
+          className="text-sm lowercase text-sub hover:text-accent underline-offset-2 hover:underline transition-colors"
         >
           give up
         </button>
