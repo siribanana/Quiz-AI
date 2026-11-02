@@ -6,6 +6,7 @@ import { checkAnswer } from "@/lib/answerMatching";
 import { useQuizClock, type FinishResult, type SlotStatus } from "@/lib/useQuizClock";
 import QuestionSlot from "./QuestionSlot";
 import Timer from "./Timer";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface SlotState {
   value: string;
@@ -27,7 +28,7 @@ export default function QuizBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
   const score = slots.filter((s) => s.status === "correct").length;
   const allCorrect = slots.length > 0 && score === slots.length;
 
-  const { remainingSeconds, giveUp } = useQuizClock({
+  const { remainingSeconds, confirmingGiveUp, requestGiveUp, confirmGiveUp, cancelGiveUp } = useQuizClock({
     timeLimitSeconds,
     allCorrect,
     onFinish: (reason, timeRemainingSeconds) => {
@@ -95,12 +96,20 @@ export default function QuizBoard({ quiz, timeLimitSeconds, onFinish }: Props) {
       </div>
       <div className="mt-6 text-center">
         <button
-          onClick={giveUp}
+          onClick={requestGiveUp}
           className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
         >
           give up
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmingGiveUp}
+        message="Give up? You'll jump straight to the results with remaining answers revealed."
+        confirmLabel="give up"
+        cancelLabel="cancel"
+        onConfirm={confirmGiveUp}
+        onCancel={cancelGiveUp}
+      />
     </div>
   );
 }

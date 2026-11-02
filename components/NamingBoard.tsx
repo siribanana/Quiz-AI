@@ -5,6 +5,7 @@ import type { Quiz } from "@/lib/quizSchema";
 import { checkAnswer } from "@/lib/answerMatching";
 import { useQuizClock, type FinishResult, type SlotStatus } from "@/lib/useQuizClock";
 import Timer from "./Timer";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
   quiz: Quiz;
@@ -25,7 +26,7 @@ export default function NamingBoard({ quiz, timeLimitSeconds, onFinish }: Props)
   const allCorrect = slotStatuses.length > 0 && score === slotStatuses.length;
   const remainingCount = slotStatuses.filter((s) => s === "unanswered").length;
 
-  const { remainingSeconds, giveUp } = useQuizClock({
+  const { remainingSeconds, confirmingGiveUp, requestGiveUp, confirmGiveUp, cancelGiveUp } = useQuizClock({
     timeLimitSeconds,
     allCorrect,
     onFinish: (reason, timeRemainingSeconds) => {
@@ -123,12 +124,20 @@ export default function NamingBoard({ quiz, timeLimitSeconds, onFinish }: Props)
 
       <div className="text-center">
         <button
-          onClick={giveUp}
+          onClick={requestGiveUp}
           className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
         >
           give up
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmingGiveUp}
+        message="Give up? You'll jump straight to the results with remaining answers revealed."
+        confirmLabel="give up"
+        cancelLabel="cancel"
+        onConfirm={confirmGiveUp}
+        onCancel={cancelGiveUp}
+      />
     </div>
   );
 }

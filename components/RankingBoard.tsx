@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Quiz } from "@/lib/quizSchema";
 import { useQuizClock, type FinishResult, type SlotStatus } from "@/lib/useQuizClock";
 import Timer from "./Timer";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
   quiz: Quiz;
@@ -60,7 +61,7 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
 
   const allCorrect = lastCheckedScore === total;
 
-  const { remainingSeconds, giveUp } = useQuizClock({
+  const { remainingSeconds, confirmingGiveUp, requestGiveUp, confirmGiveUp, cancelGiveUp } = useQuizClock({
     timeLimitSeconds,
     allCorrect,
     onFinish: (reason, timeRemainingSeconds) => {
@@ -148,12 +149,20 @@ export default function RankingBoard({ quiz, timeLimitSeconds, onFinish }: Props
           check order
         </button>
         <button
-          onClick={giveUp}
+          onClick={requestGiveUp}
           className="text-sm lowercase text-sub hover:text-error underline-offset-2 hover:underline transition-colors"
         >
           give up
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmingGiveUp}
+        message="Give up? You'll jump straight to the results with remaining answers revealed."
+        confirmLabel="give up"
+        cancelLabel="cancel"
+        onConfirm={confirmGiveUp}
+        onCancel={cancelGiveUp}
+      />
     </div>
   );
 }

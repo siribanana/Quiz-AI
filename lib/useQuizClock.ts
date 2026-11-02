@@ -19,6 +19,7 @@ interface UseQuizClockArgs {
 
 export function useQuizClock({ timeLimitSeconds, allCorrect, onFinish }: UseQuizClockArgs) {
   const [remainingSeconds, setRemainingSeconds] = useState(timeLimitSeconds);
+  const [confirmingGiveUp, setConfirmingGiveUp] = useState(false);
   const finishedRef = useRef(false);
 
   function finish(reason: FinishReason) {
@@ -47,13 +48,19 @@ export function useQuizClock({ timeLimitSeconds, allCorrect, onFinish }: UseQuiz
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allCorrect]);
 
-  function giveUp() {
+  function requestGiveUp() {
     if (finishedRef.current) return;
-    const confirmed = window.confirm(
-      "Give up? You'll jump straight to the results with remaining answers revealed."
-    );
-    if (confirmed) finish("gaveUp");
+    setConfirmingGiveUp(true);
   }
 
-  return { remainingSeconds, giveUp };
+  function confirmGiveUp() {
+    setConfirmingGiveUp(false);
+    finish("gaveUp");
+  }
+
+  function cancelGiveUp() {
+    setConfirmingGiveUp(false);
+  }
+
+  return { remainingSeconds, confirmingGiveUp, requestGiveUp, confirmGiveUp, cancelGiveUp };
 }
