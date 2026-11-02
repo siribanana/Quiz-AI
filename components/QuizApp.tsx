@@ -88,7 +88,7 @@ export default function QuizApp() {
         quiz ai
       </h1>
       <p className="text-center text-sm mb-8 text-sub">
-        type any topic — we&apos;ll research it and build you a timed fill-in-the-blank quiz
+        type any topic — we&apos;ll research it and build you a quiz
       </p>
 
       {(phase === "idle" || phase === "generating") && (
