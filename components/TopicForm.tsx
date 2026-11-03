@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { Difficulty, QuizMode } from "@/lib/prompt";
+import { EXAMPLE_TOPICS, pickRandomTopicIndex } from "@/lib/exampleTopics";
 
 interface Props {
   onGenerate: (topic: string, minutes: number, difficulty: Difficulty, mode: QuizMode) => void;
@@ -26,12 +27,19 @@ export default function TopicForm({ onGenerate, generating, error }: Props) {
   const [minutes, setMinutes] = useState(5);
   const [difficulty, setDifficulty] = useState<Difficulty>("difficult");
   const [mode, setMode] = useState<QuizMode>("general");
+  const [lastTopicIndex, setLastTopicIndex] = useState<number | null>(null);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = topic.trim();
     if (trimmed.length < 3) return;
     onGenerate(trimmed, minutes, difficulty, mode);
+  }
+
+  function handleRandomTopic() {
+    const index = pickRandomTopicIndex(lastTopicIndex);
+    setLastTopicIndex(index);
+    setTopic(EXAMPLE_TOPICS[index]);
   }
 
   return (
@@ -44,6 +52,16 @@ export default function TopicForm({ onGenerate, generating, error }: Props) {
         disabled={generating}
         className="w-full rounded-md border border-sub-alt bg-background-alt p-3 text-foreground placeholder:text-sub outline-none focus:border-accent disabled:opacity-50 transition-colors"
       />
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={handleRandomTopic}
+          disabled={generating}
+          className="text-sm text-sub lowercase transition-colors hover:text-accent disabled:opacity-50"
+        >
+          lacking inspiration? · random topic
+        </button>
+      </div>
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center gap-3">
           <label className="text-sm text-sub lowercase" htmlFor="minutes">

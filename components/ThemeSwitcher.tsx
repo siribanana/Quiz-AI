@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DEFAULT_THEME_ID, THEME_STORAGE_KEY, THEMES, isThemeId } from "@/lib/theme";
+import { DEFAULT_THEME_ID, THEME_STORAGE_KEY, THEMES, isThemeId, type ThemeOption } from "@/lib/theme";
+
+function ThemeSwatch({ t }: { t: ThemeOption }) {
+  return (
+    <span
+      className="flex h-4 w-7 shrink-0 items-center justify-center gap-0.5 rounded-sm"
+      style={{ backgroundColor: t.background }}
+      aria-hidden
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.accent }} />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.sub }} />
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.foreground }} />
+    </span>
+  );
+}
 
 function readInitialTheme(): string {
   if (typeof window === "undefined") return DEFAULT_THEME_ID;
@@ -102,11 +116,7 @@ export default function ThemeSwitcher() {
                     t.id === theme ? "text-accent" : "text-sub hover:text-foreground"
                   }`}
                 >
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: t.swatch }}
-                    aria-hidden
-                  />
+                  <ThemeSwatch t={t} />
                   <span className="truncate">{t.label}</span>
                 </button>
               ))
@@ -120,7 +130,7 @@ export default function ThemeSwitcher() {
         aria-expanded={open}
         className="flex items-center gap-2 rounded-md bg-background-alt px-3 py-1.5 text-sm lowercase text-sub transition-colors hover:text-foreground"
       >
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: current.swatch }} aria-hidden />
+        <ThemeSwatch t={current} />
         theme: {current.label}
       </button>
     </div>
