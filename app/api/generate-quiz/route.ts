@@ -12,11 +12,15 @@ import {
   type QuizMode,
 } from "@/lib/prompt";
 import { QUIZ_JSON_SCHEMA, findAnswerLeaks, isValidQuizShape, type Quiz } from "@/lib/quizSchema";
+import { getCurrentUser } from "@/lib/auth";
 
 export const maxDuration = 60;
 
-const MODEL = "claude-haiku-5-5";
 const MAX_RESUME_ATTEMPTS = 3;
+
+function modelFor(difficulty: Difficulty): string {
+  return difficulty === "hardcore" ? "claude-sonnet-5-5" : "claude-haiku-5-5";
+}
 
 function extractJson(text: string): unknown {
   try {
@@ -39,7 +43,7 @@ async function callModel(
 ) {
   const client = getAnthropicClient();
   return client.messages.stream({
-    model: MODEL,
+    model: modelFor(difficulty),
     max_tokens: maxTokens,
     system: buildSystemPrompt(difficulty, mode, count),
     messages,
@@ -177,6 +181,16 @@ export async function POST(request: NextRequest) {
   const difficulty: Difficulty = isDifficulty(parsedBody?.difficulty) ? parsedBody.difficulty : "difficult";
   const mode: QuizMode = isQuizMode(parsedBody?.mode) ? parsedBody.mode : "general";
   const count = extractRequestedCount(topic);
+
+  if (difficulty === "hardcore") {
+    const user = await getCurrentUser();
+    if (!user || !user.is_paid) {
+      return NextResponse.json(
+        { error: "Hardcore is a paid-only difficulty. Sign up and upgrade your account to unlock it." },
+        { status: 403 }
+      );
+    }
+  }
 
   try {
     const quiz = await generateQuiz(topic, difficulty, mode, count);

@@ -8,6 +8,7 @@ interface Props {
   onGenerate: (topic: string, minutes: number, difficulty: Difficulty, mode: QuizMode) => void;
   generating: boolean;
   error: string | null;
+  canUseHardcore: boolean;
 }
 
 const TIME_OPTIONS = [2, 3, 5, 10];
@@ -22,18 +23,20 @@ const MODE_OPTIONS: { value: QuizMode; label: string }[] = [
   { value: "ranking", label: "Ranking" },
 ];
 
-export default function TopicForm({ onGenerate, generating, error }: Props) {
+export default function TopicForm({ onGenerate, generating, error, canUseHardcore }: Props) {
   const [topic, setTopic] = useState("");
   const [minutes, setMinutes] = useState(5);
   const [difficulty, setDifficulty] = useState<Difficulty>("difficult");
   const [mode, setMode] = useState<QuizMode>("general");
   const [lastTopicIndex, setLastTopicIndex] = useState<number | null>(null);
 
+  const effectiveDifficulty = difficulty === "hardcore" && !canUseHardcore ? "difficult" : difficulty;
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = topic.trim();
     if (trimmed.length < 3) return;
-    onGenerate(trimmed, minutes, difficulty, mode);
+    onGenerate(trimmed, minutes, effectiveDifficulty, mode);
   }
 
   function handleRandomTopic() {
@@ -85,22 +88,27 @@ export default function TopicForm({ onGenerate, generating, error }: Props) {
           <div className="flex items-center gap-3">
             <span className="text-sm text-sub lowercase">difficulty</span>
             <div className="flex rounded-md bg-background-alt overflow-hidden">
-              {DIFFICULTY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={generating}
-                  onClick={() => setDifficulty(opt.value)}
-                  aria-pressed={difficulty === opt.value}
-                  className={`px-3 py-1 text-sm lowercase transition-colors disabled:opacity-50 ${
-                    difficulty === opt.value
-                      ? "bg-accent text-accent-ink font-medium"
-                      : "text-sub hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {DIFFICULTY_OPTIONS.map((opt) => {
+                const locked = opt.value === "hardcore" && !canUseHardcore;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={generating || locked}
+                    onClick={() => setDifficulty(opt.value)}
+                    aria-pressed={effectiveDifficulty === opt.value}
+                    title={locked ? "paid accounts only — sign up and upgrade below" : undefined}
+                    className={`px-3 py-1 text-sm lowercase transition-colors disabled:opacity-50 ${
+                      effectiveDifficulty === opt.value
+                        ? "bg-accent text-accent-ink font-medium"
+                        : "text-sub hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                    {locked && " 🔒"}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Quiz } from "@/lib/quizSchema";
 import type { Difficulty, QuizMode } from "@/lib/prompt";
 import type { FinishResult } from "@/lib/useQuizClock";
+import { useAuth } from "@/lib/useAuth";
 import TopicForm from "./TopicForm";
 import QuizBoard from "./QuizBoard";
 import NamingBoard from "./NamingBoard";
@@ -25,6 +26,7 @@ const MODE_LABELS: Record<QuizMode, string> = {
 };
 
 export default function QuizApp() {
+  const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("idle");
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(300);
@@ -71,6 +73,25 @@ export default function QuizApp() {
   function handleFinish(r: FinishResult) {
     setResult(r);
     setPhase("finished");
+    if (user && quiz) {
+      fetch("/api/quiz-results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: quiz.topic,
+          mode,
+          difficulty: mode === "general" ? difficulty : null,
+          questionCount: quiz.questions.length,
+          score: r.score,
+          total: r.total,
+          reason: r.reason,
+          timeLimitSeconds,
+          timeRemainingSeconds: r.timeRemainingSeconds,
+        }),
+      }).catch(() => {
+        // Non-critical — if saving history fails, the quiz result is still shown to the user.
+      });
+    }
   }
 
   function handleNewQuiz() {
@@ -92,7 +113,12 @@ export default function QuizApp() {
       </p>
 
       {(phase === "idle" || phase === "generating") && (
-        <TopicForm onGenerate={handleGenerate} generating={phase === "generating"} error={error} />
+        <TopicForm
+          onGenerate={handleGenerate}
+          generating={phase === "generating"}
+          error={error}
+          canUseHardcore={!!user?.isPaid}
+        />
       )}
 
       {phase === "ready" && quiz && (

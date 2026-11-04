@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lexend_Deca, Roboto_Mono } from "next/font/google";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import AuthWidget from "@/components/AuthWidget";
 import "./globals.css";
 
 const lexendDeca = Lexend_Deca({
@@ -52,6 +53,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         {children}
+        <a
+          href="https://github.com/siribanana/Quiz-AI"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed top-4 right-4 z-50 rounded-md bg-background-alt px-3 py-1.5 text-sm lowercase text-sub transition-colors hover:text-foreground"
+        >
+          github
+        </a>
+        <AuthWidget />
         <ThemeSwitcher />
       </body>
     </html>

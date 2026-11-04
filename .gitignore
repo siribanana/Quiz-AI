@@ -25,6 +25,9 @@
 *.pem
 .Rhistory
 
+# local sqlite database (contains password hashes / user data)
+/data/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
