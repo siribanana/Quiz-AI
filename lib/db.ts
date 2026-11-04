@@ -31,7 +31,12 @@ export interface QuizResultRow {
   created_at: string;
 }
 
-const dataDir = path.join(process.cwd(), "data");
+// Vercel's serverless functions have a read-only filesystem outside /tmp, so
+// the project-folder "data/" path only works for local dev / a persistent
+// host. On Vercel, fall back to /tmp so requests don't hard-crash — note
+// this means data there doesn't survive cold starts or redeploys (see the
+// "known limitation" note in CLAUDE.md).
+const dataDir = process.env.VERCEL ? "/tmp/quizai-data" : path.join(process.cwd(), "data");
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
