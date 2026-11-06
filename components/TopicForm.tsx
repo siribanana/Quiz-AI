@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import type { Difficulty, QuizMode } from "@/lib/prompt";
+import { useRef, useState, type FormEvent } from "react";
+import { detectQuizMode, type Difficulty, type QuizMode } from "@/lib/prompt";
 import { EXAMPLE_TOPICS, pickRandomTopicIndex } from "@/lib/exampleTopics";
 
 interface Props {
@@ -29,6 +29,9 @@ export default function TopicForm({ onGenerate, generating, error, canUseHardcor
   const [difficulty, setDifficulty] = useState<Difficulty>("difficult");
   const [mode, setMode] = useState<QuizMode>("general");
   const [lastTopicIndex, setLastTopicIndex] = useState<number | null>(null);
+  // Once the user manually picks a quiz type, stop auto-suggesting one —
+  // their explicit choice always wins over the topic-based guess.
+  const modeTouchedRef = useRef(false);
 
   const effectiveDifficulty = difficulty === "hardcore" && !canUseHardcore ? "difficult" : difficulty;
 
@@ -39,17 +42,30 @@ export default function TopicForm({ onGenerate, generating, error, canUseHardcor
     onGenerate(trimmed, minutes, effectiveDifficulty, mode);
   }
 
+  function handleTopicChange(value: string) {
+    const trimmed = value.slice(0, 300);
+    setTopic(trimmed);
+    if (!modeTouchedRef.current) setMode(detectQuizMode(trimmed));
+  }
+
+  function handleModeChange(value: QuizMode) {
+    modeTouchedRef.current = true;
+    setMode(value);
+  }
+
   function handleRandomTopic() {
     const index = pickRandomTopicIndex(lastTopicIndex);
     setLastTopicIndex(index);
-    setTopic(EXAMPLE_TOPICS[index]);
+    const picked = EXAMPLE_TOPICS[index];
+    setTopic(picked);
+    if (!modeTouchedRef.current) setMode(detectQuizMode(picked));
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <textarea
         value={topic}
-        onChange={(e) => setTopic(e.target.value.slice(0, 300))}
+        onChange={(e) => handleTopicChange(e.target.value)}
         placeholder="e.g. the 10 most visited attractions in the world"
         rows={3}
         disabled={generating}
@@ -120,7 +136,7 @@ export default function TopicForm({ onGenerate, generating, error, canUseHardcor
                 key={opt.value}
                 type="button"
                 disabled={generating}
-                onClick={() => setMode(opt.value)}
+                onClick={() => handleModeChange(opt.value)}
                 aria-pressed={mode === opt.value}
                 className={`px-3 py-1 text-sm lowercase transition-colors disabled:opacity-50 ${
                   mode === opt.value

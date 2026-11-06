@@ -11,6 +11,47 @@ export const MAX_QUESTION_COUNT = 20;
 const LIST_ADJECTIVES =
   "most|best|worst|longest|shortest|tallest|biggest|smallest|highest|lowest|greatest|largest|oldest|newest|youngest|richest|poorest|fastest|slowest|popular|visited|famous|important|dangerous|deadliest|deepest|wealthiest";
 
+// Superlatives that describe an objectively measurable attribute (height,
+// length, speed, age, wealth, death toll, etc.) — strong enough to imply a
+// ranked-list topic even with no explicit count ("tallest mountains", not
+// just "10 tallest mountains"). Deliberately narrower than LIST_ADJECTIVES:
+// words like "famous" or "important" have no real ranking criterion, so they
+// only count toward a ranked-list topic when paired with an explicit count
+// (handled separately below) — bare "famous paintings of the Renaissance"
+// should stay a general-knowledge topic, not force an arbitrary ranking.
+const BARE_RANK_SIGNAL_WORDS =
+  "tallest|shortest|longest|biggest|smallest|highest|lowest|largest|oldest|newest|youngest|richest|poorest|fastest|slowest|deepest|deadliest|greatest";
+
+const RANKING_VERB_PATTERN = /\b(rank|ranking|order|sort)\b/i;
+
+// "countries by population", "cricketers by test runs", "dinosaurs by size"
+// — a "by <measurable quantity>" phrase implies a ranking criterion even
+// with no superlative word at all.
+const RANKING_CRITERION_PATTERN =
+  /\bby\s+(?:\w+\s+){0,2}(size|height|weight|population|length|area|speed|age|wealth|revenue|sales|runs|score|depth|distance|elevation|magnitude)\b/i;
+
+/**
+ * Suggests the quiz type that best fits the topic's phrasing: a ranked list
+ * of comparable items ("naming" — name the item at each rank — or "ranking"
+ * — assign the rank — when the topic explicitly asks to rank/order/sort
+ * something) versus a general-knowledge topic (an event, person, era, or
+ * subject with no inherent ranking). This is only ever a default suggestion
+ * for the UI to pre-select; it never overrides an explicit mode choice.
+ */
+export function detectQuizMode(topic: string): QuizMode {
+  const hasTopCount = /\btop[\s-]*\d{1,3}\b/i.test(topic);
+  const hasCountedAdjective = new RegExp(`\\b\\d{1,3}\\s+(${LIST_ADJECTIVES})\\b`, "i").test(topic);
+  const hasBareRankWord = new RegExp(`\\b(${BARE_RANK_SIGNAL_WORDS})\\b`, "i").test(topic);
+  const hasRankingVerb = RANKING_VERB_PATTERN.test(topic);
+  const hasRankingCriterion = RANKING_CRITERION_PATTERN.test(topic);
+
+  const looksLikeRankedList =
+    hasTopCount || hasCountedAdjective || hasBareRankWord || hasRankingVerb || hasRankingCriterion;
+  if (!looksLikeRankedList) return "general";
+
+  return hasRankingVerb ? "ranking" : "naming";
+}
+
 function clampQuestionCount(n: number): number {
   if (!Number.isFinite(n) || n <= 0) return DEFAULT_QUESTION_COUNT;
   return Math.min(MAX_QUESTION_COUNT, Math.max(MIN_QUESTION_COUNT, Math.round(n)));
